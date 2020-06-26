@@ -5,11 +5,12 @@ import sys
 
 import torch
 import torch.nn as nn
+import numpy as np
 
 from transformers import get_linear_schedule_with_warmup
+from sklearn.metrics import accuracy_score
 
 import os, configparser, math, random
-
 import datareader, tokenizer, utils
 
 # deterministic determinism
@@ -171,8 +172,7 @@ def evaluate(model, data_loader, weights, suppress_output=True):
 
     batch_logits = logits.detach().cpu().numpy()
     batch_labels = batch_labels.to('cpu').numpy()
-    # batch_preds = np.argmax(batch_logits, axis=1)
-    batch_preds = torch.argmax(batch_logits, axis=1)
+    batch_preds = np.argmax(batch_logits, axis=1)
 
     all_labels.extend(batch_labels.tolist())
     all_predictions.extend(batch_preds.tolist())
@@ -180,13 +180,8 @@ def evaluate(model, data_loader, weights, suppress_output=True):
     total_loss += loss.item()
     num_steps += 1
 
-  f1 = metrics.f1(all_labels,
-                  all_predictions,
-                  reldata.int2label,
-                  reldata.label2int,
-                  suppress_output)
-
-  return total_loss / num_steps, f1
+  acc = accuracy_score(all_labels, all_predictions)
+  return total_loss / num_steps, acc
  
 def main():
   """Fine-tune bert"""
