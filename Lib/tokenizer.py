@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-import collections, os
+import collections
 
 class Tokenizer:
   """Tokenization and vectorization"""
@@ -8,11 +8,12 @@ class Tokenizer:
   def __init__(self, n_words, lower=False, oov_token='oovtok'):
     """Constructiion deconstruction"""
 
+    self.stoi = {}
+    self.itos = {}
+
     self.n_words = n_words
     self.lower = lower
     self.oov = oov_token
-    self.stoi = {}
-    self.itos = {}
 
     self.stoi[oov_token] = 0
     self.itos[0] = oov_token
@@ -49,33 +50,7 @@ class Tokenizer:
 
     return sequences
 
-class DirDataReader:
-  """Each label is in a subdirectory"""
-
-  @staticmethod
-  def read(path, label2int):
-    """Subdirectories are class labels"""
-
-    labels = []  # int labels
-    samples = [] # examples as strings
-
-    for label_dir in os.listdir(path):
-      label_dir_path = os.path.join(path, label_dir)
-
-      for file in os.listdir(label_dir_path):
-        file_path = os.path.join(label_dir_path, file)
-        file_text = open(file_path).read().rstrip()
-        int_label = label2int[label_dir.lower()]
-        samples.append(file_text)
-        labels.append(int_label)
-
-    return samples, labels
-
 if __name__ == "__main__":
-
-  samples, labels = DirDataReader.read(
-    '/Users/Dima/Work/Data/Opioids/Train/',
-    {'no':0, 'yes':1})
 
   texts = ['it is happening again',
            'the owls are not what they seem',
