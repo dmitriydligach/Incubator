@@ -143,10 +143,10 @@ def train(model, train_loader, val_loader, weights):
 
     av_loss = train_loss / num_train_steps
     val_loss, f1 = evaluate(model, val_loader, weights)
-    print('ep: %d, steps: %d, tr loss: %.3f, val loss: %.3f, val f1: %.3f' % \
+    print('ep: %d, steps: %d, tr loss: %.3f, val loss: %.3f, val acc: %.3f' % \
           (epoch, num_train_steps, av_loss, val_loss, f1))
 
-def evaluate(model, data_loader, weights, suppress_output=True):
+def evaluate(model, data_loader, weights):
   """Evaluation routine"""
 
   device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -181,7 +181,7 @@ def evaluate(model, data_loader, weights, suppress_output=True):
     num_steps += 1
 
   acc = accuracy_score(all_labels, all_predictions)
-  return total_loss / num_steps, acc
+  return total_loss / num_steps, acc 
  
 def main():
   """Fine-tune bert"""
@@ -226,7 +226,6 @@ def main():
   weights = len(tr_labels) / (2.0 * label_counts)
 
   train(model, train_loader, val_loader, weights)
-  evaluate(model, val_loader, weights, suppress_output=False)
 
 if __name__ == "__main__":
 
