@@ -161,7 +161,7 @@ def main():
     {'no':0, 'yes':1})
 
   tr_texts, val_texts, tr_labels, val_labels = train_test_split(
-    tr_texts, tr_labels, test_size=0.15, random_state=2020)
+    tr_texts, tr_labels, test_size=0.20, random_state=2020)
 
   tok = tokenizer.Tokenizer(cfg.getint('data', 'vocab_size'))
   tok.fit_on_texts(tr_texts)
