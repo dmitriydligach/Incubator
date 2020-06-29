@@ -5,7 +5,6 @@ sys.path.append('../Lib/')
 
 import torch
 import torch.nn as nn
-import numpy as np
 
 from transformers import get_linear_schedule_with_warmup
 from sklearn.model_selection import train_test_split
@@ -136,9 +135,9 @@ def evaluate(model, data_loader, weights):
       logits = model(batch_inputs, batch_mask)
       loss = cross_entropy_loss(logits, batch_labels)
 
-    batch_logits = logits.detach().cpu().numpy()
-    batch_labels = batch_labels.to('cpu').numpy()
-    batch_preds = np.argmax(batch_logits, axis=1)
+    batch_logits = logits.detach().to('cpu')
+    batch_labels = batch_labels.to('cpu')
+    batch_preds = torch.argmax(batch_logits, dim=1)
 
     all_labels.extend(batch_labels.tolist())
     all_predictions.extend(batch_preds.tolist())
