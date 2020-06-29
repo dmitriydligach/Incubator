@@ -19,7 +19,7 @@ class Tokenizer:
     self.itos[0] = oov_token
 
   def fit_on_texts(self, texts):
-    """Fit on a list of documents"""
+    """Fit on a list of document strings"""
 
     counts = collections.Counter()
 

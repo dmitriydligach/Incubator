@@ -28,7 +28,7 @@ class TransformerClassifier(nn.Module):
     super(TransformerClassifier, self).__init__()
 
     self.embedding = nn.Embedding(
-      num_embeddings=cfg.getint('data', 'max_tokens'),
+      num_embeddings=cfg.getint('data', 'vocab_size'),
       embedding_dim=cfg.getint('model', 'emb_dim'))
 
     self.position = PositionalEncoding(
@@ -186,12 +186,11 @@ def evaluate(model, data_loader, weights):
 def main():
   """Fine-tune bert"""
 
-  tok = tokenizer.Tokenizer(cfg.getint('data', 'max_tokens'))
-
   tr_texts, tr_labels = datareader.DirDataReader.read(
     os.path.join(base, cfg.get('data', 'train')),
     {'no':0, 'yes':1})
 
+  tok = tokenizer.Tokenizer(cfg.getint('data', 'vocab_size'))
   tok.fit_on_texts(tr_texts)
   tr_texts = tok.texts_to_sequences(tr_texts)
 

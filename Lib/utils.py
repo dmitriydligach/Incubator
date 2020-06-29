@@ -25,10 +25,16 @@ def to_transformer_inputs(seqs, max_len=None):
 
   return ids, mask
 
-def make_data_loader(texts, labels, batch_size, max_len, partition, input_processor):
+def make_data_loader(
+ sequences,
+ labels,
+ batch_size,
+ max_len,
+ partition,
+ input_processor):
   """DataLoader objects for train or dev/test sets"""
 
-  model_inputs = input_processor(texts, max_len)
+  model_inputs = input_processor(sequences, max_len)
   labels = torch.tensor(labels)
 
   # e.g. transformers take input ids and attn masks
@@ -52,8 +58,4 @@ def make_data_loader(texts, labels, batch_size, max_len, partition, input_proces
 
 if __name__ == "__main__":
 
-  texts = ['it is happening again',
-           'the owls are not what they seem']
-  ids, masks = to_transformer_inputs(texts, max_len=None)
-  print('ids:', ids)
-  print('masks:', masks)
+  pass

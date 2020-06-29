@@ -27,8 +27,12 @@ class DirDataReader:
 if __name__ == "__main__":
 
   samples, labels = DirDataReader.read(
-    '/Users/Dima/Work/Data/Opioids/Train/',
+    '/Users/Dima/Work/Data/Opioids1k/Train/',
     {'no':0, 'yes':1})
 
   print(samples[0][:100])
   print(labels[-25:])
+
+  # some stats about the data
+  lengths = [len(sample) for sample in samples]
+  print('average num of tokens:', round(sum(lengths)/len(lengths)))
