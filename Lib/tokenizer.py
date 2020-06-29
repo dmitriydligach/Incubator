@@ -33,7 +33,7 @@ class Tokenizer:
       self.itos[index] = token
       index += 1
 
-  def texts_to_sequences(self, texts):
+  def texts_to_seqs(self, texts):
     """List of strings to list of int sequences"""
 
     sequences = []
@@ -41,6 +41,23 @@ class Tokenizer:
 
       sequence = []
       for token in text.split():
+        if token in self.stoi:
+          sequence.append(self.stoi[token])
+        else:
+          sequence.append(self.stoi[self.oov])
+
+      sequences.append(sequence)
+
+    return sequences
+
+  def texts_as_sets_to_seqs(self, texts):
+    """Same as texts_to_sequences but treat texts as sets"""
+
+    sequences = []
+    for text in texts:
+
+      sequence = []
+      for token in set(text.split()):
         if token in self.stoi:
           sequence.append(self.stoi[token])
         else:

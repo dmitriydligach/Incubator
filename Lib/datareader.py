@@ -34,5 +34,6 @@ if __name__ == "__main__":
   print(labels[-25:])
 
   # some stats about the data
-  lengths = [len(sample) for sample in samples]
+  lengths = [len(sample.split()) for sample in samples]
   print('average num of tokens:', round(sum(lengths)/len(lengths)))
+  print('max_num_of_tokens:', max(lengths))

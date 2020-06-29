@@ -31,9 +31,6 @@ class TransformerClassifier(nn.Module):
       num_embeddings=cfg.getint('data', 'vocab_size'),
       embedding_dim=cfg.getint('model', 'emb_dim'))
 
-    self.position = PositionalEncoding(
-      embedding_dim=cfg.getint('model', 'emb_dim'))
-
     encoder_layer = nn.TransformerEncoderLayer(
       d_model=cfg.getint('model', 'emb_dim'),
       nhead=cfg.getint('model', 'num_heads'),
@@ -52,9 +49,7 @@ class TransformerClassifier(nn.Module):
   def forward(self, texts, attention_mask):
     """Moving forward"""
 
-    sqrtn = math.sqrt(cfg.getint('model', 'emb_dim'))
-    output = self.embedding(texts) * sqrtn
-    output = self.position(output)
+    output = self.embedding(texts) # * sqrtn
 
     # encoder input: (seq_len, batch_size, emb_dim)
     # encoder output: (seq_len, batch_size, emb_dim)
@@ -71,36 +66,6 @@ class TransformerClassifier(nn.Module):
     output = self.linear(output)
 
     return output
-
-class PositionalEncoding(nn.Module):
-  """That's my position"""
-
-  def __init__(self, embedding_dim):
-    """Deconstructing the construct"""
-
-    super(PositionalEncoding, self).__init__()
-
-    self.dropout = nn.Dropout(p=0.1)
-
-    max_len = cfg.getint('data', 'max_len')
-    pe = torch.zeros(max_len, embedding_dim)
-
-    position = torch.arange(0, max_len, dtype=torch.float).unsqueeze(1)
-    div_term = torch.exp(torch.arange(0, embedding_dim, 2).float() * \
-                         (-math.log(10000.0) / embedding_dim))
-
-    pe[:, 0::2] = torch.sin(position * div_term)
-    pe[:, 1::2] = torch.cos(position * div_term)
-    pe = pe.unsqueeze(0)
-
-    self.register_buffer('pe', pe)
-
-  def forward(self, x):
-    """We're being very forward here"""
-
-    x = x + self.pe[:x.size(0), :]
-
-    return self.dropout(x)
 
 def train(model, train_loader, val_loader, weights):
   """Training routine"""
@@ -192,7 +157,7 @@ def main():
 
   tok = tokenizer.Tokenizer(cfg.getint('data', 'vocab_size'))
   tok.fit_on_texts(tr_texts)
-  tr_texts = tok.texts_to_sequences(tr_texts)
+  tr_texts = tok.texts_as_sets_to_seqs(tr_texts)
 
   train_loader = utils.make_data_loader(
     tr_texts,
@@ -206,7 +171,7 @@ def main():
     os.path.join(base, cfg.get('data', 'test')),
     {'no':0, 'yes':1})
 
-  val_texts = tok.texts_to_sequences(val_texts)
+  val_texts = tok.texts_as_sets_to_seqs(val_texts)
 
   val_loader = utils.make_data_loader(
     val_texts,
