@@ -9,6 +9,7 @@ import torch.nn as nn
 from transformers import get_linear_schedule_with_warmup
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score
+from sklearn.metrics import roc_auc_score
 
 import os, configparser, math, random
 import datareader, tokenizer, utils
@@ -108,7 +109,7 @@ def train(model, train_loader, val_loader, weights):
 
     av_loss = train_loss / num_train_steps
     val_loss, f1 = evaluate(model, val_loader, weights)
-    print('ep: %d, steps: %d, tr loss: %.3f, val loss: %.3f, val acc: %.3f' % \
+    print('ep: %d, steps: %d, tr loss: %.3f, val loss: %.3f, val roc: %.3f' % \
           (epoch, num_train_steps, av_loss, val_loss, f1))
 
 def evaluate(model, data_loader, weights):
@@ -124,7 +125,7 @@ def evaluate(model, data_loader, weights):
   model.eval()
 
   all_labels = []
-  all_predictions = []
+  all_probs = []
 
   for batch in data_loader:
     batch = tuple(t.to(device) for t in batch)
@@ -137,16 +138,16 @@ def evaluate(model, data_loader, weights):
 
     batch_logits = logits.detach().to('cpu')
     batch_labels = batch_labels.to('cpu')
-    batch_preds = torch.argmax(batch_logits, dim=1)
+    batch_probs = torch.nn.functional.softmax(batch_logits, dim=1)[:, 1]
 
     all_labels.extend(batch_labels.tolist())
-    all_predictions.extend(batch_preds.tolist())
+    all_probs.extend(batch_probs.tolist())
 
     total_loss += loss.item()
     num_steps += 1
 
-  acc = accuracy_score(all_labels, all_predictions)
-  return total_loss / num_steps, acc 
+  roc_auc = roc_auc_score(all_labels, all_probs)
+  return total_loss / num_steps, roc_auc
  
 def main():
   """Fine-tune bert"""
