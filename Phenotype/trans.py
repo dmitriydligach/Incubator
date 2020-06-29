@@ -8,6 +8,7 @@ import torch.nn as nn
 import numpy as np
 
 from transformers import get_linear_schedule_with_warmup
+from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score
 
 import os, configparser, math, random
@@ -151,13 +152,22 @@ def evaluate(model, data_loader, weights):
 def main():
   """Fine-tune bert"""
 
+  #
+  # split train into train and validation and evaluate
+  #
+
   tr_texts, tr_labels = datareader.DirDataReader.read(
     os.path.join(base, cfg.get('data', 'train')),
     {'no':0, 'yes':1})
 
+  tr_texts, val_texts, tr_labels, val_labels = train_test_split(
+    tr_texts, tr_labels, test_size=0.15, random_state=2020)
+
   tok = tokenizer.Tokenizer(cfg.getint('data', 'vocab_size'))
   tok.fit_on_texts(tr_texts)
+
   tr_texts = tok.texts_as_sets_to_seqs(tr_texts)
+  val_texts = tok.texts_as_sets_to_seqs(val_texts)
 
   train_loader = utils.make_data_loader(
     tr_texts,
@@ -166,12 +176,6 @@ def main():
     cfg.getint('data', 'max_len'),
     'train',
     utils.to_transformer_inputs)
-
-  val_texts, val_labels = datareader.DirDataReader.read(
-    os.path.join(base, cfg.get('data', 'test')),
-    {'no':0, 'yes':1})
-
-  val_texts = tok.texts_as_sets_to_seqs(val_texts)
 
   val_loader = utils.make_data_loader(
     val_texts,
@@ -190,6 +194,50 @@ def main():
   weights = len(tr_labels) / (2.0 * label_counts)
 
   train(model, train_loader, val_loader, weights)
+
+  #
+  # now retrain and evaluate on test
+  #
+
+  tr_texts, tr_labels = datareader.DirDataReader.read(
+    os.path.join(base, cfg.get('data', 'train')),
+    {'no':0, 'yes':1})
+
+  test_texts, test_labels = datareader.DirDataReader.read(
+    os.path.join(base, cfg.get('data', 'test')),
+    {'no':0, 'yes':1})
+
+  tok = tokenizer.Tokenizer(cfg.getint('data', 'vocab_size'))
+  tok.fit_on_texts(tr_texts)
+
+  tr_texts = tok.texts_as_sets_to_seqs(tr_texts)
+  test_texts = tok.texts_as_sets_to_seqs(test_texts)
+
+  train_loader = utils.make_data_loader(
+    tr_texts,
+    tr_labels,
+    cfg.getint('model', 'batch_size'),
+    cfg.getint('data', 'max_len'),
+    'train',
+    utils.to_transformer_inputs)
+
+  test_loader = utils.make_data_loader(
+    test_texts,
+    test_labels,
+    cfg.getint('model', 'batch_size'),
+    cfg.getint('data', 'max_len'),
+    'test',
+    utils.to_transformer_inputs)
+
+  print('loaded %d training and %d test samples' % \
+        (len(tr_texts), len(test_texts)))
+
+  model = TransformerClassifier()
+
+  label_counts = torch.bincount(torch.IntTensor(tr_labels))
+  weights = len(tr_labels) / (2.0 * label_counts)
+
+  train(model, train_loader, test_loader, weights)
 
 if __name__ == "__main__":
 
