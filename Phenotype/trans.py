@@ -8,7 +8,6 @@ import torch.nn as nn
 
 from transformers import get_linear_schedule_with_warmup
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import accuracy_score
 from sklearn.metrics import roc_auc_score
 
 import os, configparser, math, random
@@ -68,7 +67,7 @@ class TransformerClassifier(nn.Module):
 
     return output
 
-def train(model, train_loader, val_loader, weights):
+def fit(model, train_loader, val_loader, weights, n_epochs):
   """Training routine"""
 
   device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -86,7 +85,10 @@ def train(model, train_loader, val_loader, weights):
     num_warmup_steps=100,
     num_training_steps=1000)
 
-  for epoch in range(1, cfg.getint('model', 'num_epochs') + 1):
+  best_roc_auc = -1
+  optimal_epochs = -1
+
+  for epoch in range(1, n_epochs + 1):
     model.train()
     train_loss, num_train_steps = 0, 0
 
@@ -108,9 +110,15 @@ def train(model, train_loader, val_loader, weights):
       num_train_steps += 1
 
     av_loss = train_loss / num_train_steps
-    val_loss, f1 = evaluate(model, val_loader, weights)
+    val_loss, roc_auc = evaluate(model, val_loader, weights)
     print('ep: %d, steps: %d, tr loss: %.3f, val loss: %.3f, val roc: %.3f' % \
-          (epoch, num_train_steps, av_loss, val_loss, f1))
+          (epoch, num_train_steps, av_loss, val_loss, roc_auc))
+
+    if roc_auc > best_roc_auc:
+      best_roc_auc = roc_auc
+      optimal_epochs = epoch
+
+  return best_roc_auc, optimal_epochs
 
 def evaluate(model, data_loader, weights):
   """Evaluation routine"""
@@ -146,8 +154,10 @@ def evaluate(model, data_loader, weights):
     total_loss += loss.item()
     num_steps += 1
 
+  av_loss = total_loss / num_steps
   roc_auc = roc_auc_score(all_labels, all_probs)
-  return total_loss / num_steps, roc_auc
+
+  return av_loss, roc_auc
  
 def main():
   """Fine-tune bert"""
@@ -193,7 +203,13 @@ def main():
   label_counts = torch.bincount(torch.IntTensor(tr_labels))
   weights = len(tr_labels) / (2.0 * label_counts)
 
-  train(model, train_loader, val_loader, weights)
+  best_roc, optimal_epochs = fit(
+    model,
+    train_loader,
+    val_loader,
+    weights,
+    cfg.getint('model', 'num_epochs'))
+  print('roc auc %.3f after %d epochs' % (best_roc, optimal_epochs))
 
   #
   # now retrain and evaluate on test
@@ -237,7 +253,7 @@ def main():
   label_counts = torch.bincount(torch.IntTensor(tr_labels))
   weights = len(tr_labels) / (2.0 * label_counts)
 
-  train(model, train_loader, test_loader, weights)
+  fit(model, train_loader, test_loader, weights, optimal_epochs)
 
 if __name__ == "__main__":
 
